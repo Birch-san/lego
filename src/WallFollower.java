@@ -1,4 +1,4 @@
-//Build 1A12
+//Build 1A14
 
 import lejos.nxt.Button;
 import lejos.nxt.LCD;
@@ -27,9 +27,7 @@ public class WallFollower
 		Motor.B.backward();
 		Motor.C.forward();
 		Thread.sleep(time);
-		Motor.A.stop();
-		Motor.B.stop();
-		Motor.C.stop();
+		Stop();
 				}
 		catch (Exception e) {
 		LCD.drawString("Error",0,0);
@@ -43,9 +41,7 @@ public class WallFollower
 		Motor.B.forward();
 		Motor.C.backward();
 		Thread.sleep(time);
-		Motor.A.stop();
-		Motor.B.stop();
-		Motor.C.stop();
+		Stop();
 				}
 		catch (Exception e) {
 				LCD.drawString("Error",0,0);
@@ -59,9 +55,7 @@ public class WallFollower
 		Motor.B.backward();
 		Motor.C.forward();
 		Thread.sleep(time);
-		Motor.A.stop();
-		Motor.B.stop();
-		Motor.C.stop();
+		Stop();
 		} catch (Exception e) {		LCD.drawString("Error",0,0);
 		Stop();}
 	}
@@ -72,9 +66,7 @@ public class WallFollower
 		Motor.B.backward();
 		Motor.C.backward();
 		Thread.sleep(time);
-		Motor.A.stop();
-		Motor.B.stop();
-		Motor.C.stop();
+		Stop();
 		} catch (Exception e) {		LCD.drawString("Error",0,0);
 		Stop();}
 	}
