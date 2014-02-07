@@ -6,16 +6,16 @@ public class WallFollower
 {
 	public static void main (String[] args){
 		LCD.drawString("Motor Test: Forward",0,0);
-		Forward(275);
+		Forward(500);
 		Button.waitForAnyPress();
 		LCD.drawString("Motor Test: Backward",0,0);
-		Backward(275);
+		Backward(500);
 		Button.waitForAnyPress();
 		LCD.drawString("Motor Test: Left",0,0);
-		Left(275);
+		Left(500);
 		Button.waitForAnyPress();
 		LCD.drawString("Motor Test: Right",0,0);
-		Right(275);
+		Right(500);
 		Button.waitForAnyPress();
 	}
 	
