@@ -19,7 +19,7 @@ public class WallFollower
 		Button.waitForAnyPress();
 	}
 	
-	public static void Forward(int time){
+	public static void Backward(int time){
 		try {
 		Motor.A.forward();
 		Motor.B.backward();
@@ -35,7 +35,7 @@ public class WallFollower
 		}
 	}
 	
-	public static void Backward(int time){
+	public static void Forward(int time){
 		try {
 		Motor.A.backward();
 		Motor.B.forward();
