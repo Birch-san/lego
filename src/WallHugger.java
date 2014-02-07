@@ -1,18 +1,24 @@
-import java.io.File;
+import lejos.nxt.Button;
+import lejos.nxt.LCD;
+import lejos.nxt.LightSensor;
+import lejos.nxt.SensorPort;
 
-import lejos.nxt.Sound;
-
+/**
+ * For testing the HiTechnic color sensor (see lejos.nxt.addon.ColorHTSensor).
+ * @author BB
+ */
 public class WallHugger {
-	public static void main(String [] options) throws Exception {
-		
-		// Calculate number of WAV files
-		File file = new File("CheeseLoud.wav");
-		Sound.playSample(file, 100);
 
-		Thread.sleep(2000);
+	final static int INTERVAL = 200; // milliseconds
+	
+	public static void main(String [] args) throws Exception {
+		LightSensor cmps = new LightSensor(SensorPort.S1);
 		
-		Sound.playSample(new File("PetrolLoud.wav"), 100);
-		
-		Thread.sleep(2000);
+		while(!Button.ESCAPE.isDown()) {
+			LCD.clear();
+			LCD.drawInt(cmps.readValue(),7,3);
+			LCD.refresh();
+			Thread.sleep(INTERVAL);
+		}
 	}
 }
