@@ -72,8 +72,8 @@ public class WallFollower
 	}
 	
 	public static void Stop(){
-		Motor.A.stop();
-		Motor.B.stop();
+		Motor.A.stop(true);
+		Motor.B.stop(true);
 		Motor.C.stop();
 	}
 }
