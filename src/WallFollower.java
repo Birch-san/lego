@@ -22,6 +22,9 @@ public class WallFollower
 		Motor.B.backward();
 		Motor.C.forward();
 		Thread.sleep(time);
+		Motor.A.stop();
+		Motor.B.stop();
+		Motor.C.stop();
 				}
 		catch (Exception e) {}
 	}
@@ -32,6 +35,9 @@ public class WallFollower
 		Motor.B.forward();
 		Motor.C.backward();
 		Thread.sleep(time);
+		Motor.A.stop();
+		Motor.B.stop();
+		Motor.C.stop();
 				}
 		catch (Exception e) {}
 	}
@@ -42,6 +48,9 @@ public class WallFollower
 		Motor.B.backward();
 		Motor.C.forward();
 		Thread.sleep(time);
+		Motor.A.stop();
+		Motor.B.stop();
+		Motor.C.stop();
 		} catch (Exception e) {}
 	}
 	
@@ -51,6 +60,9 @@ public class WallFollower
 		Motor.B.backward();
 		Motor.C.backward();
 		Thread.sleep(time);
+		Motor.A.stop();
+		Motor.B.stop();
+		Motor.C.stop();
 		} catch (Exception e) {}
 	}
 }
