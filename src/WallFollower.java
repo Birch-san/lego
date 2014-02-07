@@ -29,7 +29,10 @@ public class WallFollower
 		Motor.B.stop();
 		Motor.C.stop();
 				}
-		catch (Exception e) {}
+		catch (Exception e) {
+		LCD.drawString("Error",0,0);
+		Stop();
+		}
 	}
 	
 	public static void Backward(int time){
@@ -42,7 +45,10 @@ public class WallFollower
 		Motor.B.stop();
 		Motor.C.stop();
 				}
-		catch (Exception e) {}
+		catch (Exception e) {
+				LCD.drawString("Error",0,0);
+		Stop();
+		}
 	}
 	
 	public static void Left(int time){
@@ -54,7 +60,8 @@ public class WallFollower
 		Motor.A.stop();
 		Motor.B.stop();
 		Motor.C.stop();
-		} catch (Exception e) {}
+		} catch (Exception e) {		LCD.drawString("Error",0,0);
+		Stop();}
 	}
 	
 	public static void Right(int time){
@@ -66,6 +73,13 @@ public class WallFollower
 		Motor.A.stop();
 		Motor.B.stop();
 		Motor.C.stop();
-		} catch (Exception e) {}
+		} catch (Exception e) {		LCD.drawString("Error",0,0);
+		Stop();}
+	}
+	
+	public static void Stop(){
+		Motor.A.stop();
+		Motor.B.stop();
+		Motor.C.stop();
 	}
 }
