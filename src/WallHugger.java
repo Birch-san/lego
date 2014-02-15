@@ -30,15 +30,34 @@ public class WallHugger {
 		//File file2 = new File("PetrolLoud.wav");
 		//Sound.playSample(file2, 100);
 
+		boolean touched = false;
 		
 		while(!Button.ESCAPE.isDown()) {
 			if (touchFront.isPressed() || touchLeft.isPressed()) {
-				WallFollower.Right(INTERVAL);
+				touched = true;
 				if (Sound.getTime() < 1) {
 					Sound.playSample(file1, 200);
 				}
+				// 45 = 12 turns
+				for (int i=0; i<42; i++) {
+					WallFollower.Right(INTERVAL);
+				}
 			} else {
-				WallFollower.Forward(INTERVAL);
+				if (!touched) {
+					WallFollower.Forward(INTERVAL);
+				} else {
+					WallFollower.Forward(INTERVAL);
+					if (sonic.getDistance()>75) {
+						// clear obstacle
+						for (int i=0; i<10; i++) {
+							WallFollower.Forward(INTERVAL);
+						}
+						for (int i=0; i<55; i++) {
+							WallFollower.Left(INTERVAL);
+						}
+						touched = false;
+					}
+				}
 			}
 			
 			LCD.clear();
