@@ -19,7 +19,8 @@ public class WallFollower
 	public static void Forward(int time){
 		try {
 		Motor.A.forward();
-		Motor.B.backward();
+		Motor.B.forward();
+		//Motor.B.stop();
 		Motor.C.forward();
 		Thread.sleep(time);
 				}
@@ -29,7 +30,7 @@ public class WallFollower
 	public static void Backward(int time){
 		try {
 		Motor.A.backward();
-		Motor.B.forward();
+		Motor.B.backward();
 		Motor.C.backward();
 		Thread.sleep(time);
 				}

@@ -15,12 +15,13 @@ import lejos.nxt.Sound;
  */
 public class WallHugger {
 
-	final static int INTERVAL = 200; // milliseconds
+	final static int INTERVAL = 50; // milliseconds
 	
 	public static void main(String [] args) throws Exception {
 		//LightSensor cmps = new LightSensor(SensorPort.S1);
 		UltrasonicSensor sonic = new UltrasonicSensor(SensorPort.S1);
-		TouchSensor touchFront = new TouchSensor(SensorPort.S3);
+		TouchSensor touchFront = new TouchSensor(SensorPort.S2);
+		TouchSensor touchLeft = new TouchSensor(SensorPort.S3);
 		
 		File file1 = new File("OwLoud.wav");
 
@@ -31,15 +32,21 @@ public class WallHugger {
 
 		
 		while(!Button.ESCAPE.isDown()) {
+			if (touchFront.isPressed() || touchLeft.isPressed()) {
+				WallFollower.Right(INTERVAL);
+				if (Sound.getTime() < 1) {
+					Sound.playSample(file1, 200);
+				}
+			} else {
+				WallFollower.Forward(INTERVAL);
+			}
+			
 			LCD.clear();
 			//LCD.drawInt(sonic.readValue(),7,3);
 			//System.out.println("touch = " + touchFront.isPressed());
 			//System.out.println("distance = " + sonic.getDistance());
 			//LCD.refresh();
-			WallFollower.Right(INTERVAL);
-			if (Sound.getTime() < 1) {
-				Sound.playSample(file1, 200);
-			}
+			//WallFollower.Right(INTERVAL);
 			Thread.sleep(INTERVAL);
 		}
 	}
