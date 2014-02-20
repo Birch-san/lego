@@ -38,7 +38,10 @@ public class WallHugger {
 		
 		int timesStepped = 0;
 		
+		int spaceDist = 50;
+		
 		while(!Button.ESCAPE.isDown()) {
+			currentDist  = sonic.getDistance();
 			if (touchFront.isPressed() || touchLeft.isPressed()) {
 				touchedEver = true;
 				atWall = true;
@@ -46,46 +49,52 @@ public class WallHugger {
 					Sound.playSample(file1, 200);
 				}
 				// 45 = 12 turns
-				for (int i=0; i<42; i++) {
+				for (int i=0; i<36; i++) {
 					WallFollower.Right(INTERVAL);
 				}
 			} else {
-				WallFollower.Forward(50);
+				WallFollower.Forward(INTERVAL);
+				// makes a cool sound!
+				//WallFollower.Brake();
 				timesStepped++;
 				
-				currentDist  = sonic.getDistance();
 				if (touchedEver) {
-					if (currentDist>75 && atWall) {
+					if (currentDist>spaceDist && atWall) {
 						atWall = false;
 						// clear obstacle
 						for (int i=0; i<10; i++) {
 							WallFollower.Forward(INTERVAL);
 						}
-						for (int i=0; i<55; i++) {
+						// revise turning amount to be proportional to distance (see free space or angled wall)
+						for (int i=0; i<40; i++) {
 							WallFollower.Left(INTERVAL);
 						}
-					} else {
-						if (currentDist<=75) {
+					} else if (atWall) {
+						if (currentDist<=spaceDist) {
 							atWall = true;
-							/*// do no comparison if undefined
+							// do no comparison if undefined
 							if (previousDist== -1) previousDist = currentDist;
 							
 							int tolerance = 0;
 							
-							if (currentDist>previousDist+tolerance) {
-								// diverging
-								for (int i=0; i<3; i++) {
-									WallFollower.Left(INTERVAL);
-								} 
-							} else if (currentDist<previousDist-tolerance) {
-								// converging
-								for (int i=0; i<3; i++) {
-									WallFollower.Right(INTERVAL);
+							if (timesStepped>4) {
+								if (currentDist>previousDist+tolerance) {
+									// diverging
+									for (int i=0; i<1; i++) {
+										WallFollower.Left(INTERVAL);
+									} 
+								} else if (currentDist<previousDist-tolerance) {
+									// converging
+									for (int i=0; i<1; i++) {
+										WallFollower.Right(INTERVAL);
+									}
 								}
-							}*/
+								timesStepped = 0;
+								previousDist = currentDist;
+							}
 						}
 					}
-					if (timesStepped>10) {
+					/*if (timesStepped>10) {
 						LCD.clear();
 						//LCD.drawInt(sonic.getDistance(),7,3);
 						//System.out.println("touch = " + touchFront.isPressed());
@@ -97,7 +106,7 @@ public class WallHugger {
 						WallFollower.Brake();
 						Button.waitForAnyPress();
 						timesStepped = 0;
-					}
+					}*/
 				}
 			}
 
