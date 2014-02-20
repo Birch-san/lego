@@ -30,11 +30,13 @@ public class WallHugger {
 		//File file2 = new File("PetrolLoud.wav");
 		//Sound.playSample(file2, 100);
 
-		boolean touched = false;
+		boolean touchedEver = false;
+		boolean atWall = false;
 		
 		while(!Button.ESCAPE.isDown()) {
 			if (touchFront.isPressed() || touchLeft.isPressed()) {
-				touched = true;
+				touchedEver = true;
+				atWall = true;
 				if (Sound.getTime() < 1) {
 					Sound.playSample(file1, 200);
 				}
@@ -43,11 +45,10 @@ public class WallHugger {
 					WallFollower.Right(INTERVAL);
 				}
 			} else {
-				if (!touched) {
-					WallFollower.Forward(INTERVAL);
-				} else {
-					WallFollower.Forward(INTERVAL);
-					if (sonic.getDistance()>75) {
+				WallFollower.Forward(INTERVAL);
+				if (touchedEver) {
+					if (sonic.getDistance()>75 && atWall) {
+						atWall = false;
 						// clear obstacle
 						for (int i=0; i<10; i++) {
 							WallFollower.Forward(INTERVAL);
@@ -55,16 +56,21 @@ public class WallHugger {
 						for (int i=0; i<55; i++) {
 							WallFollower.Left(INTERVAL);
 						}
-						touched = false;
+					} else {
+						if (sonic.getDistance()<=75) {
+							atWall = true;
+						}
 					}
 				}
 			}
+
+			//System.out.println(sonic.getDistance());
 			
 			LCD.clear();
-			//LCD.drawInt(sonic.readValue(),7,3);
-			//System.out.println("touch = " + touchFront.isPressed());
-			//System.out.println("distance = " + sonic.getDistance());
-			//LCD.refresh();
+			LCD.drawInt(sonic.getDistance(),7,3);
+			System.out.println("touch = " + touchFront.isPressed());
+			System.out.println("distance = " + sonic.getDistance());
+			LCD.refresh();
 			//WallFollower.Right(INTERVAL);
 			Thread.sleep(INTERVAL);
 		}
