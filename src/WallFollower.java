@@ -54,4 +54,10 @@ public class WallFollower
 		Thread.sleep(time);
 		} catch (Exception e) {}
 	}
+	
+	public static void Brake() {
+		Motor.A.stop(true);
+		Motor.B.stop(true);
+		Motor.C.stop(true);
+	}
 }

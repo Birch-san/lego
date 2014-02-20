@@ -33,6 +33,11 @@ public class WallHugger {
 		boolean touchedEver = false;
 		boolean atWall = false;
 		
+		int currentDist = -1; 
+		int previousDist = -1;
+		
+		int timesStepped = 0;
+		
 		while(!Button.ESCAPE.isDown()) {
 			if (touchFront.isPressed() || touchLeft.isPressed()) {
 				touchedEver = true;
@@ -45,9 +50,12 @@ public class WallHugger {
 					WallFollower.Right(INTERVAL);
 				}
 			} else {
-				WallFollower.Forward(INTERVAL);
+				WallFollower.Forward(50);
+				timesStepped++;
+				
+				currentDist  = sonic.getDistance();
 				if (touchedEver) {
-					if (sonic.getDistance()>75 && atWall) {
+					if (currentDist>75 && atWall) {
 						atWall = false;
 						// clear obstacle
 						for (int i=0; i<10; i++) {
@@ -57,20 +65,45 @@ public class WallHugger {
 							WallFollower.Left(INTERVAL);
 						}
 					} else {
-						if (sonic.getDistance()<=75) {
+						if (currentDist<=75) {
 							atWall = true;
+							/*// do no comparison if undefined
+							if (previousDist== -1) previousDist = currentDist;
+							
+							int tolerance = 0;
+							
+							if (currentDist>previousDist+tolerance) {
+								// diverging
+								for (int i=0; i<3; i++) {
+									WallFollower.Left(INTERVAL);
+								} 
+							} else if (currentDist<previousDist-tolerance) {
+								// converging
+								for (int i=0; i<3; i++) {
+									WallFollower.Right(INTERVAL);
+								}
+							}*/
 						}
+					}
+					if (timesStepped>10) {
+						LCD.clear();
+						//LCD.drawInt(sonic.getDistance(),7,3);
+						//System.out.println("touch = " + touchFront.isPressed());
+						System.out.println("prevDist = " + previousDist);
+						System.out.println("distance = " + currentDist);
+						previousDist = currentDist;
+						LCD.refresh();
+						
+						WallFollower.Brake();
+						Button.waitForAnyPress();
+						timesStepped = 0;
 					}
 				}
 			}
 
 			//System.out.println(sonic.getDistance());
 			
-			LCD.clear();
-			LCD.drawInt(sonic.getDistance(),7,3);
-			System.out.println("touch = " + touchFront.isPressed());
-			System.out.println("distance = " + sonic.getDistance());
-			LCD.refresh();
+			
 			//WallFollower.Right(INTERVAL);
 			Thread.sleep(INTERVAL);
 		}
