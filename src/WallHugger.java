@@ -9,6 +9,8 @@ import java.io.File;
 
 import lejos.nxt.Sound;
 
+import java.util.ArrayList;
+
 /**
  * For testing the HiTechnic color sensor (see lejos.nxt.addon.ColorHTSensor).
  * @author BB
@@ -31,6 +33,14 @@ public class WallHugger {
 	
 	static int wallCheckFreq = 4;
 	
+	static boolean roundingCorner = false;
+	
+	private static enum maneuvers {
+		BACK, LEFTREVERSE, RIGHT, FORWARD, LEFT
+	}
+	
+	private static ArrayList<maneuvers> queuedManeuvers = new ArrayList<maneuvers>();
+	
 	public static void main(String [] args) throws Exception {
 		//LightSensor cmps = new LightSensor(SensorPort.S1);
 		UltrasonicSensor sonic = new UltrasonicSensor(SensorPort.S1);
@@ -42,12 +52,19 @@ public class WallHugger {
 		Thread.sleep(2000);
 		
 		while(!Button.ESCAPE.isDown()) {
+			timesStepped++;
+			
 			currentDist  = sonic.getDistance();
+			
 			// touch is highest priority; interrupts all
 			if (touchFront.isPressed() || touchLeft.isPressed()) {
 				beHit();
 			} else {
-				explore();
+				if (roundingCorner) {
+					continueRoundingCorner();
+				} else {
+					explore();
+				}
 			}
 			
 			//WallFollower.RightSteer(INTERVAL);
@@ -56,11 +73,9 @@ public class WallHugger {
 	}
 	
 	private static void explore() {
-		WallFollower.Forward(INTERVAL);
-		timesStepped++;
-		
 		if (touchedEver) {
 			if (currentDist>spaceDist && atWall) {
+				// inherently, roundingCorner is already false
 				turnRoundCorner();
 			} else if (atWall) {
 				// already on a wall? follow it!
@@ -73,6 +88,9 @@ public class WallHugger {
 					followWall();
 				}
 			}
+		} else {
+			// walk until we hit our first wall
+			WallFollower.Forward(INTERVAL);
 		}
 	}
 	
@@ -81,9 +99,7 @@ public class WallHugger {
 		// do no comparison if undefined
 		if (previousDist== -1) previousDist = currentDist;
 		
-		if (timesStepped>wallCheckFreq) {
-			pronateToWall();
-		}
+		pronateToWall();
 	}
 	
 	private static void pronateToWall() {
@@ -101,7 +117,7 @@ public class WallHugger {
 			// we are too far from wall; converge
 			Sound.playNote(Sound.XYLOPHONE, 2093, 7);
 			
-			int convergeSteps = wallCheckFreq;
+			//int convergeSteps = wallCheckFreq;
 			/*
 			// how obtuse did wall become since last sweep?
 			int convergeSteps = currentDist-previousDist;
@@ -112,13 +128,13 @@ public class WallHugger {
 			*/
 			
 			//for (int i=0; i<convergeSteps; i++) {
-				WallFollower.LeftSteer(INTERVAL*convergeSteps);
+				WallFollower.LeftSteer(INTERVAL);
 			//}
 		} else if (currentDist<wallMinBerth) {
 			Sound.playNote(Sound.XYLOPHONE, 1760, 7);
 			// we are too close to wall; diverge
 			
-			int divergeSteps = wallCheckFreq;
+			//int divergeSteps = wallCheckFreq;
 			
 			/*
 			// how acute did wall become since last sweep?
@@ -130,8 +146,11 @@ public class WallHugger {
 			*/
 			
 			//for (int i=0; i<divergeSteps; i++) {
-				WallFollower.RightSteer(INTERVAL*divergeSteps);
+				WallFollower.RightSteer(INTERVAL);
 			//}
+		} else {
+			// we are within the right range from wall; just go forward
+			WallFollower.Forward(INTERVAL);
 		}
 		
 		/*if (currentDist>previousDist+tolerance) {
@@ -141,8 +160,10 @@ public class WallHugger {
 			// converging to wall
 		}*/
 		
-		timesStepped = 0;
-		previousDist = currentDist;
+		if (timesStepped>wallCheckFreq) {
+			timesStepped = 0;
+			previousDist = currentDist;
+		}
 	}
 	
 	private static void turnIntoSpace() {
@@ -150,22 +171,49 @@ public class WallHugger {
 		
 		Sound.playNote(Sound.FLUTE, 440, 7);
 		
-		int clearObstacleInterval = INTERVAL*10; 
-		// clear obstacle
-		WallFollower.Forward(clearObstacleInterval);
+		int clearObstacleSteps = 10; 
+		for (int i=0; i<clearObstacleSteps; i++) {
+			queuedManeuvers.add(maneuvers.FORWARD);
+		}
 		
-		int leftTurnInterval = INTERVAL*40;
+		// clear obstacle
+		//WallFollower.Forward(clearObstacleInterval);
+		
+		int leftTurnSteps = 40;
+		for (int i=0; i<leftTurnSteps; i++) {
+			queuedManeuvers.add(maneuvers.LEFT);
+		}
 		
 		// revise turning amount to be proportional to distance (see free space or angled wall)
-		WallFollower.Left(leftTurnInterval);
+		//WallFollower.Left(leftTurnInterval);
 	}
 	
 	private static void turnRoundCorner() {
+		roundingCorner = true;
+		queuedManeuvers = new ArrayList<maneuvers>();
+		
 		turnIntoSpace();
 		
-		int passCornerInterval = INTERVAL*36;
+		int passCornerSteps = 36;
 		// clear obstacle
-		WallFollower.Forward(passCornerInterval);
+		for (int i=0; i<passCornerSteps; i++) {
+			queuedManeuvers.add(maneuvers.FORWARD);
+		}
+	}
+	
+	private static void continueRoundingCorner() {
+		if (queuedManeuvers.size()>0) {
+			maneuvers currentMove = queuedManeuvers.remove(0);
+			if (currentMove == maneuvers.FORWARD) {
+				WallFollower.Forward(INTERVAL);
+			} else if (currentMove == maneuvers.LEFT) {
+				WallFollower.Left(INTERVAL);
+			}
+		}
+		// set it as soon as we know
+		if (queuedManeuvers.size()==0) {
+			roundingCorner = false;
+		}
 	}
 	
 	private static void beHit() {
