@@ -59,31 +59,53 @@ public class WallFollower
 	
 	public static void Left(int time){
 		try {
-			useTurningSpeedWithFlankRatio();
-		Motor.A.backward();
-		Motor.B.forward();
-		Motor.C.forward();
-		Thread.sleep(time);
+			useTurningSpeed(true);
+			Motor.A.backward();
+			Motor.B.forward();
+			Motor.C.forward();
+			Thread.sleep(time);
+		} catch (Exception e) {}
+	}
+	
+	// all motors forward, in different amounts
+	public static void LeftSteer(int time){
+		try {
+			useForwardSteeringSpeed(true);
+			Motor.A.forward();
+			Motor.B.forward();
+			Motor.C.forward();
+			Thread.sleep(time);
 		} catch (Exception e) {}
 	}
 	
 	public static void LeftReverse(int time){
 		try {
-			useTurningSpeedWithFlankRatio();
+			useTurningSpeed(true);
 			Motor.A.forward();
 			Motor.B.backward();
 			Motor.C.backward();
-		Thread.sleep(time);
+			Thread.sleep(time);
 		} catch (Exception e) {}
 	}
 	
 	public static void Right(int time){
 		try {
-			useTurningSpeedWithFlankRatio();
-		Motor.A.forward();
-		Motor.B.forward();
-		Motor.C.backward();
-		Thread.sleep(time);
+			useTurningSpeed(false);
+			Motor.A.forward();
+			Motor.B.forward();
+			Motor.C.backward();
+			Thread.sleep(time);
+		} catch (Exception e) {}
+	}
+	
+	// all motors forward, in different amounts
+	public static void RightSteer(int time){
+		try {
+			useForwardSteeringSpeed(false);
+			Motor.A.forward();
+			Motor.B.forward();
+			Motor.C.forward();
+			Thread.sleep(time);
 		} catch (Exception e) {}
 	}
 	
@@ -101,12 +123,10 @@ public class WallFollower
 	}
 	
 	// flanks at different speeds, middle can go at independent speed
-	private static void setMotorSpeeds(int flankSpeed, float middleSpeed, float flankRatio) {
-		Motor.A.setSpeed(flankSpeed);
+	private static void setMotorSpeeds(float leftSpeed, float middleSpeed, float rightSpeed) {
+		Motor.A.setSpeed(leftSpeed);
 		Motor.B.setSpeed(middleSpeed);
-		
-		float widerFlankSpeed = flankSpeed*flankRatio; 
-		Motor.C.setSpeed(widerFlankSpeed);
+		Motor.C.setSpeed(rightSpeed);
 	}
 	
 	private static int baseSpeed = 400;
@@ -115,13 +135,29 @@ public class WallFollower
 		setMotorSpeeds(baseSpeed, baseSpeed);
 	}
 	
-	private static void useTurningSpeed() {
-		setMotorSpeeds(baseSpeed, baseSpeed/4);
+	private static void useTurningSpeed(boolean goingLeft) {
+		//setMotorSpeeds(baseSpeed, baseSpeed/4);
+		
+		float middleSpeed = baseSpeed/3;
+		float turnRatio = 1.5f;
+		
+		if (goingLeft) {
+			setMotorSpeeds(baseSpeed, middleSpeed, baseSpeed*turnRatio);
+		} else {
+			setMotorSpeeds(baseSpeed*turnRatio, middleSpeed, baseSpeed);
+		}
 	}
 	
-	private static void useTurningSpeedWithFlankRatio() {
-		float middleSpeed = baseSpeed/3;
+	private static void useForwardSteeringSpeed(boolean goingLeft) {
+		int baseSpeed = 225;
 		
-		setMotorSpeeds(baseSpeed, middleSpeed, 1.5f);
+		float middleSpeed = baseSpeed;
+		float turnRatio = 4.0f;
+		
+		if (goingLeft) {
+			setMotorSpeeds(baseSpeed, middleSpeed, baseSpeed*turnRatio);
+		} else {
+			setMotorSpeeds(baseSpeed*turnRatio, middleSpeed, baseSpeed);
+		}
 	}
 }
