@@ -24,17 +24,22 @@ public class WallHugger {
 	
 	static File file1;
 	
-	static int timesStepped = 0;
-	
 	static int currentDist = -1;
 	static int previousDist = -1;
 	
-	static int spaceDist = 240;
+	static int spaceDist = 70;
+	
+	static int timesStepped = 0;
+	static int probeStep = 0;
 	
 	static int wallCheckFreq = 4;
+	static int probeFreq = 30;
 	
 	static boolean roundingCorner = false;
 	static boolean hitRecovering = false;
+	
+	static int timesWallDistantThisSweep = 0;
+	//static int timesWallCloseThisSweep = 0;
 	
 	private static enum maneuvers {
 		BACKWARD, LEFTREVERSE, RIGHT, FORWARD, LEFT
@@ -50,10 +55,11 @@ public class WallHugger {
 		
 		file1 = new File("OwLoud.wav");
 
-		Thread.sleep(2000);
+		//Thread.sleep(2000);
 		
 		while(!Button.ESCAPE.isDown()) {
 			timesStepped++;
+			probeStep++;
 			
 			currentDist  = sonic.getDistance();
 			
@@ -85,6 +91,10 @@ public class WallHugger {
 					findFirstWall();
 				}
 			}
+
+			 LCD.clear();
+			 System.out.println("distance = " + currentDist);
+			 LCD.refresh();
 			
 			//WallFollower.RightSteer(INTERVAL);
 			Thread.sleep(INTERVAL);
@@ -98,6 +108,13 @@ public class WallHugger {
 	
 	private static void probeSpace() {
 		if (currentDist>spaceDist) {
+			timesWallDistantThisSweep++;
+		} else {
+			probeStep = 0;
+			timesWallDistantThisSweep = 0;
+		}
+		// if for entire sweep wall has been close, then we are definitely in free space
+		if (timesWallDistantThisSweep >= probeFreq*0.7f) {
 			if (atWall) {
 				// we have lost the wall we were on. assume corner passed.
 				turnRoundCorner();
@@ -123,17 +140,17 @@ public class WallHugger {
 	}
 	
 	private static void pronateToWall() {
-		int wallMinBerth = 33;
-		int wallMaxBerth = 37;
+		int wallMinBerth = 25;
+		int wallMaxBerth = 29;
 		
 		int maxConverge = 40;
 		int minConverge = 1;
 		
 		int multiplier = 7;
 		
-		int tolerance = 0;
+		int tolerance = 1;
 		
-		if (currentDist>wallMaxBerth) {
+		if (currentDist>wallMaxBerth || currentDist-previousDist>tolerance) {
 			// we are too far from wall; converge
 			Sound.playNote(Sound.XYLOPHONE, 2093, 7);
 			
@@ -150,7 +167,7 @@ public class WallHugger {
 			//for (int i=0; i<convergeSteps; i++) {
 				WallFollower.LeftSteer(INTERVAL);
 			//}
-		} else if (currentDist<wallMinBerth) {
+		} else if (currentDist<wallMinBerth || previousDist-currentDist>tolerance) {
 			Sound.playNote(Sound.XYLOPHONE, 1760, 7);
 			// we are too close to wall; diverge
 			
@@ -191,7 +208,7 @@ public class WallHugger {
 		
 		Sound.playNote(Sound.FLUTE, 440, 7);
 		
-		int clearObstacleSteps = 10; 
+		int clearObstacleSteps = 5;
 		for (int i=0; i<clearObstacleSteps; i++) {
 			queuedManeuvers.add(maneuvers.FORWARD);
 		}
@@ -199,7 +216,7 @@ public class WallHugger {
 		// clear obstacle
 		//WallFollower.Forward(clearObstacleInterval);
 		
-		int leftTurnSteps = 40;
+		int leftTurnSteps = 20;
 		for (int i=0; i<leftTurnSteps; i++) {
 			queuedManeuvers.add(maneuvers.LEFT);
 		}
@@ -216,7 +233,7 @@ public class WallHugger {
 		
 		turnIntoSpace();
 		
-		int passCornerSteps = 36;
+		int passCornerSteps = 18;
 		// clear obstacle
 		for (int i=0; i<passCornerSteps; i++) {
 			queuedManeuvers.add(maneuvers.FORWARD);
@@ -255,17 +272,17 @@ public class WallHugger {
 		hitRecovering = true;
 		queuedManeuvers = new ArrayList<maneuvers>();
 		
-		int backoffSteps = 10;
+		int backoffSteps = 1;
 		for (int i=0; i<backoffSteps; i++) {
 			queuedManeuvers.add(maneuvers.BACKWARD);
 		}
 		
-		int leftReverseSteps = 20;
+		int leftReverseSteps = 7;
 		for (int i=0; i<leftReverseSteps; i++) {
 			queuedManeuvers.add(maneuvers.LEFTREVERSE);
 		}
 		
-		int rightTurnSteps = 20;
+		int rightTurnSteps = 13;
 		for (int i=0; i<rightTurnSteps; i++) {
 			queuedManeuvers.add(maneuvers.RIGHT);
 		}
