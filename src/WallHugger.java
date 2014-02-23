@@ -34,9 +34,10 @@ public class WallHugger {
 	static int wallCheckFreq = 4;
 	
 	static boolean roundingCorner = false;
+	static boolean hitRecovering = false;
 	
 	private static enum maneuvers {
-		BACK, LEFTREVERSE, RIGHT, FORWARD, LEFT
+		BACKWARD, LEFTREVERSE, RIGHT, FORWARD, LEFT
 	}
 	
 	private static ArrayList<maneuvers> queuedManeuvers = new ArrayList<maneuvers>();
@@ -59,11 +60,29 @@ public class WallHugger {
 			// touch is highest priority; interrupts all
 			if (touchFront.isPressed() || touchLeft.isPressed()) {
 				beHit();
+			}
+			
+			if (hitRecovering) {
+				boolean finished = continueCurrentManeuver();
+				if (finished) {
+					hitRecovering = false;
+				}
+			} else if (roundingCorner) {
+				boolean finished = continueCurrentManeuver();
+				if (finished) {
+					roundingCorner = false;
+				}
 			} else {
-				if (roundingCorner) {
-					continueRoundingCorner();
+				// if we've found first wall 
+				if (touchedEver) {
+					// check if we need to round corner
+					probeSpace();
+					// otherwise check if we need to follow wall
+					if (!roundingCorner) {
+						probeClose();
+					}
 				} else {
-					explore();
+					findFirstWall();
 				}
 			}
 			
@@ -72,25 +91,26 @@ public class WallHugger {
 		}
 	}
 	
-	private static void explore() {
-		if (touchedEver) {
-			if (currentDist>spaceDist && atWall) {
-				// inherently, roundingCorner is already false
+	private static void findFirstWall() {
+		// walk until we hit our first wall
+		WallFollower.Forward(INTERVAL);
+	}
+	
+	private static void probeSpace() {
+		if (currentDist>spaceDist) {
+			if (atWall) {
+				// we have lost the wall we were on. assume corner passed.
 				turnRoundCorner();
-			} else if (atWall) {
-				// already on a wall? follow it!
-				if (currentDist<=spaceDist) {
-					followWall();
-				}
-			} else if (!atWall) {
-				// not on a wall any more, but found one now? follow it!
-				if (currentDist<=spaceDist) {
-					followWall();
-				}
+			} else {
+				// we are still looking for a wall, having rounded corner.
 			}
-		} else {
-			// walk until we hit our first wall
-			WallFollower.Forward(INTERVAL);
+		}
+	}
+	
+	private static void probeClose() {
+		// if there's a wall nearby, follow it
+		if (currentDist<=spaceDist) {
+			followWall();
 		}
 	}
 	
@@ -189,6 +209,8 @@ public class WallHugger {
 	}
 	
 	private static void turnRoundCorner() {
+		// actually hit recovering is higher priority, so this should never occur..
+		hitRecovering = false;
 		roundingCorner = true;
 		queuedManeuvers = new ArrayList<maneuvers>();
 		
@@ -201,19 +223,21 @@ public class WallHugger {
 		}
 	}
 	
-	private static void continueRoundingCorner() {
+	private static boolean continueCurrentManeuver() {
 		if (queuedManeuvers.size()>0) {
 			maneuvers currentMove = queuedManeuvers.remove(0);
 			if (currentMove == maneuvers.FORWARD) {
 				WallFollower.Forward(INTERVAL);
 			} else if (currentMove == maneuvers.LEFT) {
 				WallFollower.Left(INTERVAL);
+			} else if (currentMove == maneuvers.BACKWARD) {
+				WallFollower.Backward(INTERVAL);
+			} else if (currentMove == maneuvers.LEFTREVERSE) {
+				WallFollower.LeftReverse(INTERVAL);
 			}
 		}
-		// set it as soon as we know
-		if (queuedManeuvers.size()==0) {
-			roundingCorner = false;
-		}
+		// tell whether maneuvers remain
+		return queuedManeuvers.size()==0;
 	}
 	
 	private static void beHit() {
@@ -227,18 +251,23 @@ public class WallHugger {
 	}
 	
 	private static void threePointTurnRight() {
-
-		int backoffInterval = INTERVAL*10;
+		roundingCorner = false;
+		hitRecovering = true;
+		queuedManeuvers = new ArrayList<maneuvers>();
 		
-		WallFollower.Backward(backoffInterval);
+		int backoffSteps = 10;
+		for (int i=0; i<backoffSteps; i++) {
+			queuedManeuvers.add(maneuvers.BACKWARD);
+		}
 		
-		int leftReverseInterval = INTERVAL*20;
+		int leftReverseSteps = 20;
+		for (int i=0; i<leftReverseSteps; i++) {
+			queuedManeuvers.add(maneuvers.LEFTREVERSE);
+		}
 		
-		WallFollower.LeftReverse(leftReverseInterval);
-		
-		int rightTurnInterval = INTERVAL*20;
-		//int rightTurnIterations = 36;
-		
-		WallFollower.Right(rightTurnInterval);
+		int rightTurnSteps = 20;
+		for (int i=0; i<rightTurnSteps; i++) {
+			queuedManeuvers.add(maneuvers.RIGHT);
+		}
 	}
 }
