@@ -16,6 +16,18 @@ import lejos.nxt.Sound;
 public class WallHugger {
 
 	final static int INTERVAL = 50; // milliseconds
+
+	static boolean touchedEver = false;
+	static boolean atWall = false;
+	
+	static File file1;
+	
+	static int timesStepped = 0;
+	
+	static int currentDist = -1;
+	static int previousDist = -1;
+	
+	static int spaceDist = 120;
 	
 	public static void main(String [] args) throws Exception {
 		//LightSensor cmps = new LightSensor(SensorPort.S1);
@@ -23,98 +35,102 @@ public class WallHugger {
 		TouchSensor touchFront = new TouchSensor(SensorPort.S2);
 		TouchSensor touchLeft = new TouchSensor(SensorPort.S3);
 		
-		File file1 = new File("OwLoud.wav");
+		file1 = new File("OwLoud.wav");
 
 		Thread.sleep(2000);
-		
-		//File file2 = new File("PetrolLoud.wav");
-		//Sound.playSample(file2, 100);
-
-		boolean touchedEver = false;
-		boolean atWall = false;
-		
-		int currentDist = -1; 
-		int previousDist = -1;
-		
-		int timesStepped = 0;
-		
-		int spaceDist = 50;
 		
 		while(!Button.ESCAPE.isDown()) {
 			currentDist  = sonic.getDistance();
 			if (touchFront.isPressed() || touchLeft.isPressed()) {
-				touchedEver = true;
-				atWall = true;
-				if (Sound.getTime() < 1) {
-					Sound.playSample(file1, 200);
-				}
-				// 45 = 12 turns
-				for (int i=0; i<36; i++) {
-					WallFollower.Right(INTERVAL);
-				}
+				beHit();
 			} else {
-				WallFollower.Forward(INTERVAL);
-				// makes a cool sound!
-				//WallFollower.Brake();
-				timesStepped++;
-				
-				if (touchedEver) {
-					if (currentDist>spaceDist && atWall) {
-						atWall = false;
-						// clear obstacle
-						for (int i=0; i<10; i++) {
-							WallFollower.Forward(INTERVAL);
-						}
-						// revise turning amount to be proportional to distance (see free space or angled wall)
-						for (int i=0; i<40; i++) {
-							WallFollower.Left(INTERVAL);
-						}
-					} else if (atWall) {
-						if (currentDist<=spaceDist) {
-							atWall = true;
-							// do no comparison if undefined
-							if (previousDist== -1) previousDist = currentDist;
-							
-							int tolerance = 0;
-							
-							if (timesStepped>4) {
-								if (currentDist>previousDist+tolerance) {
-									// diverging
-									for (int i=0; i<1; i++) {
-										WallFollower.Left(INTERVAL);
-									} 
-								} else if (currentDist<previousDist-tolerance) {
-									// converging
-									for (int i=0; i<1; i++) {
-										WallFollower.Right(INTERVAL);
-									}
-								}
-								timesStepped = 0;
-								previousDist = currentDist;
-							}
-						}
-					}
-					/*if (timesStepped>10) {
-						LCD.clear();
-						//LCD.drawInt(sonic.getDistance(),7,3);
-						//System.out.println("touch = " + touchFront.isPressed());
-						System.out.println("prevDist = " + previousDist);
-						System.out.println("distance = " + currentDist);
-						previousDist = currentDist;
-						LCD.refresh();
-						
-						WallFollower.Brake();
-						Button.waitForAnyPress();
-						timesStepped = 0;
-					}*/
-				}
+				explore();
 			}
-
-			//System.out.println(sonic.getDistance());
-			
-			
-			//WallFollower.Right(INTERVAL);
 			Thread.sleep(INTERVAL);
 		}
+	}
+	
+	private static void explore() {
+		WallFollower.Forward(INTERVAL);
+		timesStepped++;
+		
+		if (touchedEver) {
+			if (currentDist>spaceDist && atWall) {
+				turnIntoSpace();
+			} else if (atWall) {
+				if (currentDist<=spaceDist) {
+					followWall();
+				}
+			}
+		}
+	}
+	
+	private static void followWall() {
+		atWall = true;
+		// do no comparison if undefined
+		if (previousDist== -1) previousDist = currentDist;
+		
+		if (timesStepped>4) {
+			pronateToWall();
+		}
+	}
+	
+	private static void pronateToWall() {
+		int tolerance = 0;
+		
+		if (currentDist>previousDist+tolerance) {
+			// diverging
+			for (int i=0; i<1; i++) {
+				WallFollower.Left(INTERVAL);
+			} 
+		} else if (currentDist<previousDist-tolerance) {
+			// converging
+			for (int i=0; i<1; i++) {
+				WallFollower.Right(INTERVAL);
+			}
+		}
+		timesStepped = 0;
+		previousDist = currentDist;
+	}
+	
+	private static void turnIntoSpace() {
+		atWall = false;
+		
+		Sound.playNote(Sound.FLUTE, 440, 7);
+		
+		int clearObstacleInterval = INTERVAL*10; 
+		// clear obstacle
+		WallFollower.Forward(clearObstacleInterval);
+		
+		int leftTurnInterval = INTERVAL*36;
+		
+		// revise turning amount to be proportional to distance (see free space or angled wall)
+		WallFollower.Left(leftTurnInterval);
+	}
+	
+	private static void beHit() {
+		touchedEver = true;
+		atWall = true;
+		if (Sound.getTime() < 1) {
+			Sound.playSample(file1, 200);
+		}
+		
+		threePointTurnRight();
+	}
+	
+	private static void threePointTurnRight() {
+
+		int backoffInterval = INTERVAL*10;
+		
+		WallFollower.Backward(backoffInterval);
+		
+		int leftReverseInterval = INTERVAL*20;
+		
+		WallFollower.LeftReverse(leftReverseInterval);
+		
+		int rightTurnInterval = INTERVAL*20;
+		//int rightTurnIterations = 36;
+		
+		WallFollower.Right(rightTurnInterval);
 	}
 }
