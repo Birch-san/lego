@@ -27,19 +27,21 @@ public class WallHugger {
 	static int currentDist = -1;
 	static int previousDist = -1;
 	
-	static int spaceDist = 70;
+	static int spaceDist = 40;
 	
 	static int timesStepped = 0;
 	static int probeStep = 0;
 	
 	static int wallCheckFreq = 4;
-	static int probeFreq = 30;
+	static int sweepLength = 10;
 	
 	static boolean roundingCorner = false;
 	static boolean hitRecovering = false;
 	
 	static int timesWallDistantThisSweep = 0;
 	//static int timesWallCloseThisSweep = 0;
+	
+	static boolean[] previousXProbes = new boolean[sweepLength];
 	
 	private static enum maneuvers {
 		BACKWARD, LEFTREVERSE, RIGHT, FORWARD, LEFT
@@ -52,6 +54,11 @@ public class WallHugger {
 		UltrasonicSensor sonic = new UltrasonicSensor(SensorPort.S1);
 		TouchSensor touchFront = new TouchSensor(SensorPort.S2);
 		TouchSensor touchLeft = new TouchSensor(SensorPort.S3);
+		
+		// init: last 10 probes say we are not looking into free space.
+		for (int i=0; i<sweepLength; i++) {
+			previousXProbes[i] = false;
+		}
 		
 		file1 = new File("OwLoud.wav");
 
@@ -107,19 +114,39 @@ public class WallHugger {
 	}
 	
 	private static void probeSpace() {
-		if (currentDist>spaceDist) {
-			timesWallDistantThisSweep++;
-		} else {
-			probeStep = 0;
-			timesWallDistantThisSweep = 0;
+		// must see into freespace this percent of the sweep.
+		float spaceHitsProportion = 0.7f;
+		
+		// report whether this timestep we saw freespace. 
+		previousXProbes[probeStep++ % sweepLength] = currentDist>spaceDist;
+		
+		// how many times we saw all the way into freespace ('hits')
+		int hits = 0;
+		for (int i=0; i<sweepLength; i++) {
+			if (previousXProbes[i]) {
+				hits++;
+			}
 		}
+		float proportionHit = hits/sweepLength;
+		
+		boolean turnIntoSpace = false;
+		
+		if (proportionHit>=spaceHitsProportion) {
+			for (int i=0; i<sweepLength; i++) {
+				// re-init
+				previousXProbes[i] = false;
+			}
+			turnIntoSpace = true;
+		}
+		
 		// if for entire sweep wall has been close, then we are definitely in free space
-		if (timesWallDistantThisSweep >= probeFreq*0.7f) {
+		if (turnIntoSpace) {
 			if (atWall) {
 				// we have lost the wall we were on. assume corner passed.
 				turnRoundCorner();
 			} else {
 				// we are still looking for a wall, having rounded corner.
+				// should we keep going forward? or assume an acute turn, and keep turning a bit more?
 			}
 		}
 	}
