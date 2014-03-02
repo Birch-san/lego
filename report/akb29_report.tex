@@ -1,0 +1,136 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[]{hyperref}
+%\usepackage{cleveref}
+
+\usepackage[sorting=none,backend=bibtex]{biblatex}
+\bibliography{akb29_report}
+
+\usepackage{times}
+\usepackage{graphicx,epsfig}
+\usepackage[leftcaption]{sidecap}
+\usepackage{subfigure} % figures can have sub chunks
+\usepackage{geometry} % this maxes page usage, making the below unnecessary
+\textwidth = 6.75in
+\oddsidemargin = -0.25in
+\textheight = 10in
+\topmargin = -0.5in
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\lhead{{\it Alex Birch (with partner Chris Clarke)}}
+\chead{Wall Following LEGO Robots}
+\rhead{Coursework 1}
+\lfoot{}
+\cfoot{\thepage}
+\rfoot{}
+
+\newcommand{\goodgap}{%
+ \hspace{\subfigtopskip}%
+ \hspace{\subfigbottomskip}}
+
+\newcommand{\citeauthoryear}[1]{%
+ \citeauthor{#1}%
+ ~(\citeyear{#1})}
+
+\title{Coursework 1:  Wall Following with a LEGO Robot}
+\author{Alex Birch (with partner Chris Clarke)}
+
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+We adopted a reactive approach to wall-following, for two reasons:
+\paragraph{It is difficult to be sure where we are in the world} We could not reliably follow the robot's movement through the world, as its proprioception (the ability for the robot to keep track of its body parts)\cite{lee2002proprioception} was weak; it could not say how far it had moved, even by counting the turns of its wheels. Skidding could make it go less distance than it believed, or its tyres could climb a vertical wall and believe it had travelled horizontally.
+\paragraph{It is dangerous to assume what the world looks like} Truly testing intelligence requires robots to exist in the real world. But we cannot produce valid intelligence by planning actions based on a representation of the world, since no representation could wholly represent the world\cite{brooks1991intelligence}. Reacting is a more robust way to cope with a dynamic world.
+\\
+\\
+For collision response, we recruited a mixture of avoidance and recovery. Our robot was designed to follow walls on the left only. It was largely blind on the right-hand-side, but invested a higher resolution in the side it was aiming to follow.
+\paragraph{Avoidance} An ultrasound sensor watched the left-hand-normal of the chassis. This was used to track distance to the wall it was following. The purpose was to ensure that the robot ran parallel to the wall, which had three applications: reducing the number of collisions to recover from (so that it could spend more time following the wall), maintaining known angle to wall (to compensate for lack of proprioceptory feedback from motors), and detecting when the wall has ended on the left (to initiate maneuver for continuing to follow it).
+\paragraph{Recovery} A bump sensor array was mounted in front of the robot. It was biased to covering the left-hand-side, as that was the side we were following (and thus most anticipating collision with). Collision with this would inform that a wall had been reached, and that it could be followed. The choice of recovery over avoidance for frontal collisions was because a bumper can physically resist further movement into the obstacle, simplifying the recovery. This is an example of how agent morphology generates its own sensory stimulation\cite{pfeifer2005morphological}, and how valid intelligence requires a body\cite{brooks1991intelligence,pfeifer2005morphological}.
+%A bump sensor was mounted far in front of the robot. Its purpose was to detect frontal collisions early enough to prevent the wheels gaining purchase on the wall. Since this distance limit was tangible, collision with the sensor would resist further movement in the same direction. 
+%This was to support the position-agnostic assumptions we made. 
+
+A subsumption architecture\cite{brooks1991intelligence} complemented our reactive approach. 
+
+\section{Approach}
+
+The approach describes in detail exactly what you have done.  This
+section is longer, and should ideally include some experiments you set
+up, for example to determine in what conditions you could get better
+results from the robot.  The approach should be in sufficient detail
+that another person could replicate your experiments.  You may cite
+other papers here too if you are taking an approach from another
+paper, or modifying it only slightly.
+
+Courswork one is to construct a robot capable of circumnavigating
+rooms or other closed spaces (don't worry about doorways -- just close
+or block them.)  Ideally this should work in ``natural'' (unaltered) indoor
+environments with a variety of obstacles along the walls.  To quantify
+the outcomes of this coursework, you may want to think about questions
+such as contrasting adding extra control algorithms vs. changing the
+physical shape of the robot for increasing circuit time for the robot,
+or trying different target sonar readings for maintaining a particular
+distance from the wall in a variety of contexts.  For coursework one
+it is quite likely that you will not have initially thought of a
+hypothesis to test, but will rather just have tried to make the robot
+work.  However, in your exploration (both with the robot and with the
+reading) if you do find something that seems to make a difference, you
+should go try to capture what that something is.  Can you describe it
+exactly?  Can you replicate it with different robot configurations?
+Can you quantify how much improvement you get given how much change to
+some parameter on the robot?  Don't forget to consider things such as
+the state of battery charge or whether you are operating in daylight
+or in proximity to other sonar-using robots as possible explanations
+for strange behaviour.
+
+Please do mention who shared your robot in the approach section, and
+the extent to which you worked together.  The objective here is to
+learn.  How much you work together is totally up to you so long as you
+each write your report independently.
+
+\section{Results}
+
+The results section describes the outcomes.  This should be purely
+factual descriptions, including qualitative outcomes, quantitative
+outcomes and possibly statistics.  For example, you could report the
+average speed around a circuit in two conditions plus standard
+deviations and a significance test to tell whether you have evidence
+that the conditions lead to different results. {\em For coursework~1, this
+must include video.}  Typically, the results section can be
+surprisingly short, since the Approach section is the one giving
+details, this is purely and only factual outcomes.
+
+With respect to your own results, if you describe a reasonably-well
+working system in a comprehensible manner you will pass.  If you
+competently fill in all of these sections as described in this
+specification, you will get at least~55.  Getting a mark over~70
+requires demonstrating insight, creativity and / or understanding that
+goes beyond the basics laid out for you in this document.  For
+example, an insightful comment about one or more cited papers
+supported by evidence from your experience might get you these extra
+marks.  So might a particularly accurate and replicable account of
+your approach and results.
+
+\section{Discussion}
+
+The discussion is the most discursive part of your paper, it {\em may}
+include speculation. You should discuss the extent to which your
+results addressed the questions described in your introduction, and
+what the results imply about your own work and work more broadly.  You
+might suggest other experimental protocols that could have given
+different results and lessons learned.  This can be a longer section
+as well.
+
+\section{Conclusion}
+The conclusion is just one paragraph.  After possible digressions in
+the discussion, you should come back to state exactly what you tried
+to do (brief summary of the introduction), what the outcome was (brief
+summary of the results), and what you can certainly state as a
+result of this (the implications of the results in light of the introduction.)
+
+%\bibliographystyle{apalike}
+%\bibliography{biblio}
+\printbibliography
+
+\end{document}
