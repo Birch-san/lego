@@ -17,7 +17,7 @@
 \topmargin = -0.5in
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\lhead{{\it Alex Birch (with partner Chris Clarke)}}
+\lhead{{\it Alex Birch (with Chris Clarke)}}
 \chead{Wall Following LEGO Robots}
 \rhead{Coursework 1}
 \lfoot{}
@@ -51,43 +51,25 @@ For collision response, we recruited a mixture of avoidance and recovery. Our ro
 %A bump sensor was mounted far in front of the robot. Its purpose was to detect frontal collisions early enough to prevent the wheels gaining purchase on the wall. Since this distance limit was tangible, collision with the sensor would resist further movement in the same direction. 
 %This was to support the position-agnostic assumptions we made. 
 
-A subsumption architecture\cite{brooks1991intelligence} complemented our reactive approach. 
+A subsumption architecture\cite{brooks1991intelligence} complemented our reactive approach. It allowed lower layers (such as `recover from collision') to inhibit immediate goals (such as `follow wall'). This was critical for suppressing actions that were generating inappropriate behaviour. Sensors were all running, all the time, and created the impulse for action. In this way, our action was coupled to perception; our `modules' were behaviours.
 
+Ultrasound sensing was known to be noisy, so we did not initiate maneuvers based on single samples; a percentage of positive readings over some timeframe was required to produce a strong enough impulse to invoke action.
+
+Overall the goal was to 
 \section{Approach}
+The robot had three motors; two flanking on the rear, and one frontally in the middle. It was hoped that the extra motor could contribute to the robot's speed, especially during steering, where one flanking motor has to compromise its speed output to produce a turn.
 
-The approach describes in detail exactly what you have done.  This
-section is longer, and should ideally include some experiments you set
-up, for example to determine in what conditions you could get better
-results from the robot.  The approach should be in sufficient detail
-that another person could replicate your experiments.  You may cite
-other papers here too if you are taking an approach from another
-paper, or modifying it only slightly.
+The robot was told to begin by walking forward until a collision occurred. The first object it touched was considered `the wall', and its goal was to keep that wall on its left, and follow parallel to it. The `following' consisted of constant range comparisons between current distance and historical distance. If distance from wall was increasing over time, the robot recognised that it was diverging from the wall, so biased its flanking motors to steer toward or away from the wall, maintaining a parallel angle. This fine correction of steering was called `pronation'.
 
-Courswork one is to construct a robot capable of circumnavigating
-rooms or other closed spaces (don't worry about doorways -- just close
-or block them.)  Ideally this should work in ``natural'' (unaltered) indoor
-environments with a variety of obstacles along the walls.  To quantify
-the outcomes of this coursework, you may want to think about questions
-such as contrasting adding extra control algorithms vs. changing the
-physical shape of the robot for increasing circuit time for the robot,
-or trying different target sonar readings for maintaining a particular
-distance from the wall in a variety of contexts.  For coursework one
-it is quite likely that you will not have initially thought of a
-hypothesis to test, but will rather just have tried to make the robot
-work.  However, in your exploration (both with the robot and with the
-reading) if you do find something that seems to make a difference, you
-should go try to capture what that something is.  Can you describe it
-exactly?  Can you replicate it with different robot configurations?
-Can you quantify how much improvement you get given how much change to
-some parameter on the robot?  Don't forget to consider things such as
-the state of battery charge or whether you are operating in daylight
-or in proximity to other sonar-using robots as possible explanations
-for strange behaviour.
+In the case of a right-turn in the wall, a frontal collision was expected to be sensed by the bump sensor, and a `face right' three-point-turn primitive was used to face its right-hand normal. In the case of a left-turn in the wall, a continuous reading of `distance\_max' from the left-hand sensor was expected, and a left three-point-turn primitive was used to turn into the space. Overshooting or undershooting the turn did not matter (whether because the maneuver failed or because the wall was not perpendicular), because pronation corrected the robot's angle to the wall. Pronation also tried to achieve an optimal berth from the wall; convergence toward the wall would be initiated if the robot was detected diverging from the wall, or if the robot was too far from the wall. `Optimum' distance was defined as a band of ranges that were `far enough to prevent collision with left wall', but `close enough that the followed wall was not mistaken for `distance\_max''.
 
-Please do mention who shared your robot in the approach section, and
-the extent to which you worked together.  The objective here is to
-learn.  How much you work together is totally up to you so long as you
-each write your report independently.
+Behaviour inhibition was implemented by modeling maneuver primitives as queues of motor outputs, to be popped on each timestep. Sensors ran every timestep also. Thus if a bump was detected during a maneuver, the motor queue could be cleared, aborting the maneuver in favor of a newer, more appropriate action. Layering was achieved by giving each sensor a priority; for example, bumping required urgent recovery, so could interrupt any other behaviour. The overarching `wall-following' behaviour was an implicit, emergent layer that was achieved by subsuming all lower behaviours whenever sensors deemed appropriate.
+
+Overall the robot was optimized for reaction at speed; its architecture allowed it to interrupt maneuvers. Its full complement of motors allowed it to make fine steering adjustments without compromising speed. Its static sensor mounting meant that sensing was immediate, and not a bottleneck on choosing action. Its pronation behaviour enabled it to maintain a predictable position in a changing environment, and one designed to reduce collisions so that it could spend less time recovering from them.
+
+We evaluated part of our robot's reaction effectiveness, by measuring its pronation effectiveness. Since the goal was to stay parallel to the wall, we measured how quickly it could achieve a parallel angle after rounding a corner, and how parallel that angle was. This angle change was measured by placing an array of rulers along a wall, reading what distance the robot was from the wall as it passed each one, and using trigonometry between those values to measure angles. As an independent variable, we varied the angle around which the robot had to turn to meet the new wall (ie, how obtuse the two walls were).
+
+Use p values?
 
 \section{Results}
 
