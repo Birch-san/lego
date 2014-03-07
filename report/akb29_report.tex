@@ -1,10 +1,16 @@
 \documentclass[a4paper,12pt]{article}
 
-\usepackage[]{hyperref}
-%\usepackage{cleveref}
+\usepackage[section]{placeins}
 
-\usepackage[sorting=none,backend=bibtex]{biblatex}
+\usepackage[]{hyperref}
+\usepackage{cleveref}
+
+\usepackage[sorting=none,backend=bibtex,style=authoryear]{biblatex}
 \bibliography{akb29_report}
+
+\usepackage{float}
+
+\usepackage{siunitx}
 
 \usepackage{times}
 \usepackage{graphicx,epsfig}
@@ -16,6 +22,11 @@
 \textheight = 10in
 \topmargin = -0.5in
 \usepackage{fancyhdr}
+\usepackage{pdfpages}
+
+\usepackage{enumitem}
+\setlist{nolistsep}
+
 \pagestyle{fancy}
 \lhead{{\it Alex Birch (with Chris Clarke)}}
 \chead{Wall Following LEGO Robots}
@@ -40,76 +51,255 @@
 \maketitle
 
 \section{Introduction}
-We adopted a reactive approach to wall-following, for two reasons:
-\paragraph{It is difficult to be sure where we are in the world} We could not reliably follow the robot's movement through the world, as its proprioception (the ability for the robot to keep track of its body parts)\cite{lee2002proprioception} was weak; it could not say how far it had moved, even by counting the turns of its wheels. Skidding could make it go less distance than it believed, or its tyres could climb a vertical wall and believe it had travelled horizontally.
-\paragraph{It is dangerous to assume what the world looks like} Truly testing intelligence requires robots to exist in the real world. But we cannot produce valid intelligence by planning actions based on a representation of the world, since no representation could wholly represent the world\cite{brooks1991intelligence}. Reacting is a more robust way to cope with a dynamic world.
-\\
-\\
-For collision response, we recruited a mixture of avoidance and recovery. Our robot was designed to follow walls on the left only. It was largely blind on the right-hand-side, but invested a higher resolution in the side it was aiming to follow.
-\paragraph{Avoidance} An ultrasound sensor watched the left-hand-normal of the chassis. This was used to track distance to the wall it was following. The purpose was to ensure that the robot ran parallel to the wall, which had three applications: reducing the number of collisions to recover from (so that it could spend more time following the wall), maintaining known angle to wall (to compensate for lack of proprioceptory feedback from motors), and detecting when the wall has ended on the left (to initiate maneuver for continuing to follow it).
-\paragraph{Recovery} A bump sensor array was mounted in front of the robot. It was biased to covering the left-hand-side, as that was the side we were following (and thus most anticipating collision with). Collision with this would inform that a wall had been reached, and that it could be followed. The choice of recovery over avoidance for frontal collisions was because a bumper can physically resist further movement into the obstacle, simplifying the recovery. This is an example of how agent morphology generates its own sensory stimulation\cite{pfeifer2005morphological}, and how valid intelligence requires a body\cite{brooks1991intelligence,pfeifer2005morphological}.
+We adopted a reactive approach to wall-following (as opposed to planning), for two reasons:
+\begin{itemize}
+\item The robot's movement through the world could not be reliably tracked as a plan is followed; its proprioception was limited. This concept refers to the ability for the robot to keep track of its body parts, summarised in \parencite{lee2002proprioception}.
+\item \citeauthoryear{brooks1991intelligence} argues we cannot produce valid intelligence by planning actions based on a representation of the world, since no representation could wholly represent the world.
+\end{itemize}
 %A bump sensor was mounted far in front of the robot. Its purpose was to detect frontal collisions early enough to prevent the wheels gaining purchase on the wall. Since this distance limit was tangible, collision with the sensor would resist further movement in the same direction. 
 %This was to support the position-agnostic assumptions we made. 
+A subsumption architecture --- as described in \parencite{brooks1991intelligence} --- complemented our reactive approach. It allowed lower layers (such as `recover from collision') to inhibit immediate goals (such as `follow wall'). This was critical for suppressing actions that were generating inappropriate behaviour. Sensors were all running, all the time, and created the impulse for action. In this way, our action was coupled to perception; our `modules' were behaviours.
 
-A subsumption architecture\cite{brooks1991intelligence} complemented our reactive approach. It allowed lower layers (such as `recover from collision') to inhibit immediate goals (such as `follow wall'). This was critical for suppressing actions that were generating inappropriate behaviour. Sensors were all running, all the time, and created the impulse for action. In this way, our action was coupled to perception; our `modules' were behaviours.
+Overall the goal was to be effective at reacting. We aimed for the robot to be effective at pronating to the next wall after rounding a corner. \textbf{Our hypothesis is that `change in separation' from that wall decreases, for as long as the robot follows the new wall.} In other words: irrespective of how chaotic the robot motion is as it rounds a corner, it should converge on a consistent distance from the wall, given enough wall to follow. \textbf{Our null hypothesis is that `change in separation' from the wall is unrelated to how far the robot follows the new wall.}
+\section{Approach}
+My partner was Chris Clarke. I wrote the robot code and built the robot. He gave some input on these, and edited the video. We measured performance together, but analysed the dataset independently.
+
+For collision response, we recruited a mixture of avoidance and recovery. Our robot was designed to follow walls on the left only. It was largely blind on the right-hand-side, but invested a higher resolution in the side it was aiming to follow. Its bump sensor physically guaranteed a berth from obstacles, providing intelligence through morphology \parencite{pfeifer2005morphological}.
 
 Ultrasound sensing was known to be noisy, so we did not initiate maneuvers based on single samples; a percentage of positive readings over some timeframe was required to produce a strong enough impulse to invoke action.
 
-Overall the goal was to 
-\section{Approach}
-The robot had three motors; two flanking on the rear, and one frontally in the middle. It was hoped that the extra motor could contribute to the robot's speed, especially during steering, where one flanking motor has to compromise its speed output to produce a turn.
+The robot initiates by moving forward until the bump sensor depresses. This is considered the first wall, and the robot turns to keep it on its left, following it. `Following' takes a history of range comparisons. The robot recognises `increase over time' as divergence, and steers to correct this. This fine correction of steering was called `pronation'.
 
-The robot was told to begin by walking forward until a collision occurred. The first object it touched was considered `the wall', and its goal was to keep that wall on its left, and follow parallel to it. The `following' consisted of constant range comparisons between current distance and historical distance. If distance from wall was increasing over time, the robot recognised that it was diverging from the wall, so biased its flanking motors to steer toward or away from the wall, maintaining a parallel angle. This fine correction of steering was called `pronation'.
+The robot had primitives for left and right facing maneuvers. A frontal collision (detected by bump sensor) would trigger the right-turn behavior. A consistent sensor reading of `distance\_max' from its left ultrasound sensor would trigger a left-turn. These did not need to be perfect \ang{90} turns, because pronation would correct the robot's angle to the wall afterward. The same mechanism also supported following non-perpendicular walls.
 
-In the case of a right-turn in the wall, a frontal collision was expected to be sensed by the bump sensor, and a `face right' three-point-turn primitive was used to face its right-hand normal. In the case of a left-turn in the wall, a continuous reading of `distance\_max' from the left-hand sensor was expected, and a left three-point-turn primitive was used to turn into the space. Overshooting or undershooting the turn did not matter (whether because the maneuver failed or because the wall was not perpendicular), because pronation corrected the robot's angle to the wall. Pronation also tried to achieve an optimal berth from the wall; convergence toward the wall would be initiated if the robot was detected diverging from the wall, or if the robot was too far from the wall. `Optimum' distance was defined as a band of ranges that were `far enough to prevent collision with left wall', but `close enough that the followed wall was not mistaken for `distance\_max''.
+Behaviour inhibition was implemented by modeling maneuver primitives as queues of motor outputs, to be attended on each timestep. Sensors ran every timestep also. Thus if a bump was detected during a maneuver, the motor queue could be cleared, aborting the maneuver in favor of a newer, more appropriate action. Layering was achieved by giving each sensor a priority; for example, bumping required urgent recovery, so could interrupt any other behaviour. The overarching `wall-following' behaviour was an implicit, emergent layer that was achieved by subsuming all lower behaviours whenever sensors deemed appropriate.
 
-Behaviour inhibition was implemented by modeling maneuver primitives as queues of motor outputs, to be popped on each timestep. Sensors ran every timestep also. Thus if a bump was detected during a maneuver, the motor queue could be cleared, aborting the maneuver in favor of a newer, more appropriate action. Layering was achieved by giving each sensor a priority; for example, bumping required urgent recovery, so could interrupt any other behaviour. The overarching `wall-following' behaviour was an implicit, emergent layer that was achieved by subsuming all lower behaviours whenever sensors deemed appropriate.
+Overall the robot was optimized for reacting quickly to an unpredictable environment; its architecture allowed it to interrupt maneuvers. Its three motors allowed it to make fine steering adjustments without compromising speed. Its static sensor mounting meant that sensing was immediate, and not a bottleneck on choosing action. Its pronation behaviour enabled it to maintain a predictable position.
 
-Overall the robot was optimized for reaction at speed; its architecture allowed it to interrupt maneuvers. Its full complement of motors allowed it to make fine steering adjustments without compromising speed. Its static sensor mounting meant that sensing was immediate, and not a bottleneck on choosing action. Its pronation behaviour enabled it to maintain a predictable position in a changing environment, and one designed to reduce collisions so that it could spend less time recovering from them.
-
-We evaluated part of our robot's reaction effectiveness, by measuring its pronation effectiveness. Since the goal was to stay parallel to the wall, we measured how quickly it could achieve a parallel angle after rounding a corner, and how parallel that angle was. This angle change was measured by placing an array of rulers along a wall, reading what distance the robot was from the wall as it passed each one, and using trigonometry between those values to measure angles. As an independent variable, we varied the angle around which the robot had to turn to meet the new wall (ie, how obtuse the two walls were).
-
-Use p values?
+We evaluated part of our robot's reaction effectiveness, by measuring its pronation effectiveness. Since the goal was to stay parallel to the wall, we measured its change in distance from the wall after rounding a corner. This change was measured by placing an array of rulers along a wall (at 30cm intervals), reading what distance the robot's back-left wheel was from the wall as it passed each one. As an independent variable, we varied the angle around which the robot had to turn to meet the new wall (ie, how obtuse the two walls were).
 
 \section{Results}
 
-The results section describes the outcomes.  This should be purely
-factual descriptions, including qualitative outcomes, quantitative
-outcomes and possibly statistics.  For example, you could report the
-average speed around a circuit in two conditions plus standard
-deviations and a significance test to tell whether you have evidence
-that the conditions lead to different results. {\em For coursework~1, this
-must include video.}  Typically, the results section can be
-surprisingly short, since the Approach section is the one giving
-details, this is purely and only factual outcomes.
+%\includepdf[pages={1}]{Convergence.pdf}
+%\fbox{\includegraphics[trim=0.0cm 11cm 0.0cm 11cm,clip]{Convergence.pdf}}
+%\centerline{\fbox{\includegraphics[viewport=0 0 390 610,clip,width=8in]{Convergence.pdf}}}
 
-With respect to your own results, if you describe a reasonably-well
-working system in a comprehensible manner you will pass.  If you
-competently fill in all of these sections as described in this
-specification, you will get at least~55.  Getting a mark over~70
-requires demonstrating insight, creativity and / or understanding that
-goes beyond the basics laid out for you in this document.  For
-example, an insightful comment about one or more cited papers
-supported by evidence from your experience might get you these extra
-marks.  So might a particularly accurate and replicable account of
-your approach and results.
+
+
+%\includepdf[pages={1}]{Convergence2.pdf}
+
+\Cref{fig:coursem90,fig:coursem8,fig:course0,fig:course90} show photos of each experiment.
+\Cref{fig:rawm90,fig:rawm8,fig:raw0,fig:raw90} provide the raw data measured at each milestone on the wall.
+\Cref{fig:derivm90,fig:derivm8,fig:deriv0,fig:deriv90} provide the distance deltas between each milestone. Shown also is a mean average of all 4 tests, as well as standard deviation and error in that sample. The graphs that follow are drawn from these data.
+
+\Cref{fig:turnm90} shows a moderate negative correlation; each milestone along the wall, the robot becomes more parallel.
+\Cref{fig:turnm8} shows a strong negative correlation; each milestone along the wall, the robot becomes more parallel.
+\Cref{fig:turn0} shows a weak negative correlation; each milestone along the wall, the robot becomes more parallel. In this no-turn case, the robot does not have to converge so much as it just finished following a wall of the same angle.
+\Cref{fig:turn90} shows a weak positive correlation; each milestone along the wall, the robot becomes less parallel.
 
 \section{Discussion}
 
-The discussion is the most discursive part of your paper, it {\em may}
-include speculation. You should discuss the extent to which your
-results addressed the questions described in your introduction, and
-what the results imply about your own work and work more broadly.  You
-might suggest other experimental protocols that could have given
-different results and lessons learned.  This can be a longer section
-as well.
+All tests save for \ang{90} show a negative correlation for distance change along the wall, meaning that the robot's distance from the wall changes less and less. These are consistent with the hypothesis. The anomalous \ang{90} results were unexpected, and in fact disagree with the hypothesis. These outliers might be attributable to the measurement approach; perhaps for right-turns we should have taken measurements from the right wheel instead, as it leads the turning. Overall there is a large amount of error; more attempts, more wall angles, and more measurement milestones would make the results more reliable.
 
 \section{Conclusion}
-The conclusion is just one paragraph.  After possible digressions in
-the discussion, you should come back to state exactly what you tried
-to do (brief summary of the introduction), what the outcome was (brief
-summary of the results), and what you can certainly state as a
-result of this (the implications of the results in light of the introduction.)
+
+In conclusion, our robot demonstrates the ability to follow parallel to (at least) convex walls. There is weak and potentially invalid support for its being unable to follow concave walls. The robot can thus react effectively to (at least) convex wall following situations.
+
+\section{Figures}
+
+\begin{figure}[ht]
+\centerline{\includegraphics[width=8in]{CourseM90_Edit.jpg}}
+\caption{\ang{-90} wall following (drawn path is an example for illustrative purposes)}
+\label{fig:coursem90}
+\end{figure}
+
+\begin{figure}[ht]
+\centerline{\includegraphics[width=8in]{CourseM8_Edit.jpg}}
+\caption{\ang{-8} wall following (drawn path is an example for illustrative purposes)}
+\label{fig:coursem8}
+\end{figure}
+
+\begin{figure}[ht]
+\centerline{\includegraphics[width=8in]{Course0_Edit.jpg}}
+\caption{\ang{0} wall following (drawn path is an example for illustrative purposes)}
+\label{fig:course0}
+\end{figure}
+
+\begin{figure}[ht]
+\centerline{\includegraphics[width=8in]{Course90_Edit.jpg}}
+\caption{\ang{90} wall following (drawn path is an example for illustrative purposes)}
+\label{fig:course90}
+\end{figure}
+
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Distance along wall (cm) & Attempt\#1 & Attempt\#2 & Attempt\#3 & Attempt\#4 \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+0 & 27 & 19 & 18 & 27\\
+30 & 26 & 8 & 8 & 11\\
+60 & 28 & 7 & 7 & 13\\
+90 & 30 & 8 & 8 & 16\\
+120 & 34 & 9 & 9 & 18\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Raw data for wall separation at each milestone along wall after \ang{-90} turn}
+\label{fig:rawm90}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Distance along wall (cm) & Attempt\#1 & Attempt\#2 & Attempt\#3 & Attempt\#4 \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+0 & 17 & 19 & 27 & 26\\
+30 & 7 & 26 & 26 & 27\\
+60 & 21 & 23 & 24 & 26\\
+90 & 23 & 21 & 21 & 26\\
+120 & 24 & 22 & 28 & 25\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Raw data for wall separation at each milestone along wall after \ang{-8} turn}
+\label{fig:rawm8}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Distance along wall (cm) & Attempt\#1 & Attempt\#2 & Attempt\#3 & Attempt\#4 \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+0 & 18 & 16 & 13 & 24\\
+30 & 21 & 20 & 16 & 28\\
+60 & 26 & 23 & 18 & 20\\
+90 & 28 & 26 & 20 & 32\\
+120 & 30 & 28 & 22 & 34\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Raw data for wall separation at each milestone along wall after \ang{0} turn}
+\label{fig:raw0}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Distance along wall (cm) & Attempt\#1 & Attempt\#2 & Attempt\#3 & Attempt\#4 \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+0 & 14 & 19 & 10 & 18\\
+30 & 15 & 20 & 9 & 21\\
+60 & 17 & 22 & 12 & 24\\
+90 & 19 & 26 & 14 & 28\\
+120 & 21 & 30 & 16 & 29\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Raw data for wall separation at each milestone along wall after \ang{90} turn}
+\label{fig:raw90}
+\end{figure}
+
+
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Dist travelled along wall (cm) & A\#1 & A\#2 & A\#3 & A\#4 & s.dev & mean & s.err \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+30 & 1 & 11 & 10 & 16 & 6.24 & 9.50 & 3.12\\
+60 & 2 & 1 & 1 & 2 & 0.58 & 1.50 & 0.29\\
+90 & 2 & 1 & 1 & 3 & 0.96 & 1.75 & 0.48\\
+120 & 4 & 1 & 1 & 2 & 1.41 & 2.00 & 0.71\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Delta in wall separation at each milestone along wall after \ang{-90} turn}
+\label{fig:derivm90}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Dist travelled along wall (cm) & A\#1 & A\#2 & A\#3 & A\#4 & s.dev & mean & s.err \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+30 & 10 & 7 & 1 & 1 & 4.50 & 4.75 & 2.25\\
+60 & 14 & 3 & 2 & 1 & 6.06 & 5.00 & 3.03\\
+90 & 2 & 2 & 3 & 0 & 1.26 & 1.75 & 0.63\\
+120 & 1 & 1 & 7 & 1 & 3.00 & 2.50 & 1.50\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Delta in for wall separation at each milestone along wall after \ang{-8} turn}
+\label{fig:derivm8}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Dist travelled along wall (cm) & A\#1 & A\#2 & A\#3 & A\#4 & s.dev & mean & s.err \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+30 & 3 & 4 & 3 & 4 & 0.58 & 3.50 & 0.29\\
+60 & 5 & 3 & 2 & 8 & 2.65 & 4.50 & 1.32\\
+90 & 2 & 3 & 2 & 12 & 4.86 & 4.75 & 2.43\\
+120 & 2 & 2 & 2 & 2 & 0.00 & 2.00 & 0.00\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Delta in wall separation at each milestone along wall after \ang{0} turn}
+\label{fig:deriv0}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{tabular}{c c c c c c c c} % centered columns (4 columns) 
+\hline\hline %inserts double horizontal lines 
+Dist travelled along wall (cm) & A\#1 & A\#2 & A\#3 & A\#4 & s.dev & mean & s.err \\ [0.5ex] % inserts table 
+%heading 
+\hline % inserts single horizontal line 
+30 & 1 & 1 & 1 & 3 & 1.00 & 1.50 & 0.50\\
+60 & 2 & 2 & 3 & 3 & 0.58 & 2.50 & 0.29\\
+90 & 2 & 4 & 2 & 4 & 1.15 & 3.00 & 0.58\\
+120 & 2 & 4 & 2 & 1 & 1.26 & 2.25 & 0.63\\ [1ex] % [1ex] adds vertical space 
+\hline %inserts single line 
+\end{tabular}
+\caption{Delta in wall separation at each milestone along wall after \ang{90} turn}
+\label{fig:deriv90}
+\end{figure}
+
+
+
+\begin{figure}[ht]
+\fbox{\includegraphics{TurnM90.pdf}}
+\caption{Convergence to wall after a left-hand turn, over 4 attempts}
+\label{fig:turnm90}
+\end{figure}
+
+\begin{figure}[ht]
+\fbox{\includegraphics{TurnM8.pdf}}
+\caption{Convergence to wall around slightly obtuse angle, over 4 attempts}
+\label{fig:turnm8}
+\end{figure}
+
+\begin{figure}[ht]
+\fbox{\includegraphics{Turn0.pdf}}
+\caption{Continued convergence along a straight wall, over 4 attempts}
+\label{fig:turn0}
+\end{figure}
+
+\begin{figure}[ht]
+\fbox{\includegraphics{Turn90.pdf}}
+\caption{Convergence to wall after a right-hand turn, over 4 attempts}
+\label{fig:turn90}
+\end{figure}
+
+
+\begin{figure}[ht]
+\centerline{\includegraphics[width=8in]{TheRobot.jpg}}
+\caption{The robot}
+\label{fig:theRobot}
+\end{figure}
+
+\FloatBarrier
 
 %\bibliographystyle{apalike}
 %\bibliography{biblio}
